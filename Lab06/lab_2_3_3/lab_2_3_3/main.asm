@@ -23,9 +23,9 @@
 .include "m2560def.inc"
 
 
-.def pattern_1 = r23
-.def pattern_2 = r24
-.def pattern_3 = r25
+.def pattern_1 = r2
+.def pattern_2 = r3
+.def pattern_3 = r4
 .def state = r18
 .def bounce_counter = r19
 .def button_input = r20
@@ -36,9 +36,12 @@
 .equ F_CPU = 16000000
 .equ DELAY_1MS = F_CPU / 4 / 1000 - 4
 ; 4 cycles per iteration - setup/call-return overhead
-ldi pattern_1,0x01
-ldi pattern_2,0x49
-ldi pattern_3,0x53
+ldi r16, 0b00000001
+mov pattern_1,r16
+ldi r16, 0b00000100
+mov pattern_2,r16
+ldi r16, 0b00010000
+mov pattern_3,r16
 ldi r18,0
 
 rjmp setup
@@ -149,11 +152,9 @@ listener:
     tst button_input
     breq set_pattern					; Go to set_pattern
 
+; To fix "Relative branch out of reach"
 jmp_to_main1:
 	jmp setup
-
-jmp_to_continues_pattern:
-	jmp continues_pattern
 
 ; When first button pressed less than 4 times, we go to this section
 set_pattern:
@@ -182,6 +183,7 @@ check_2:
     breq display_3						; go to display_2
 	rjmp check_2
 
+; To fix "Relative branch out of reach"
 jmp_to_main2:
 	jmp setup
 
