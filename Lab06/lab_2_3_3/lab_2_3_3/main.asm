@@ -20,18 +20,12 @@
 ;    i.e. "state" holds more than 0x1F, it is reset back to 0x01.
 ; We take the delay macro directly from the lecture slides.
 
-
-;LED - port C
-;push button1 - port D RDX3
-
-
-
 .include "m2560def.inc"
 
 
-.def pattern_1 = r2
-.def pattern_2 = r3
-.def pattern_3 = r4
+.def pattern_1 = r23
+.def pattern_2 = r24
+.def pattern_3 = r25
 .def state = r18
 .def bounce_counter = r19
 .def button_input = r20
@@ -42,18 +36,12 @@
 .equ F_CPU = 16000000
 .equ DELAY_1MS = F_CPU / 4 / 1000 - 4
 ; 4 cycles per iteration - setup/call-return overhead
-
-
-C:\Program Files (x86)\Arduino\hardware\tools\avr\bin\avrdude.exe
--C "C:\Program Files (x86)\Arduino\hardware\tools\avr\etc\avrdude.conf" -c wiring -p m2560 -P COM9 -b 115200 -U flash:w:"$(ProjectDir)Debug\$(TargetName).hex":i -D 
-
-; sbis PIND, 0         ; if PIND pin0 = 1, skip 
-; sbic PIND, 0         ; if PIND pin0 = 0, skip 
-
-
+ldi pattern_1,0x01
+ldi pattern_2,0x49
+ldi pattern_3,0x53
+ldi r18,0
 
 rjmp setup
-
 
 sleep_1ms:
     push r24
@@ -67,57 +55,72 @@ delayloop_1ms:
     pop r24
     ret
 
+sleep_5ms:                                    ; sleep 5ms
+	rcall sleep_1ms                           ; 1ms
+	rcall sleep_1ms                           ; 1ms
+	rcall sleep_1ms                           ; 1ms
+	rcall sleep_1ms                           ; 1ms
+	rcall sleep_1ms                           ; 1ms
+	ret
 
+; The macro is used to check if a button is pressed.
+; If the button is pressed, the value of button_input will be set to 0.
 .macro button_pressed						; Check if button 1 is pressed
+	ser button_input 						; Set button_input to all 1
     ldi bounce_counter, 10					; Initialise bounce counter to 10
 loop_button:
     rcall sleep_1ms
-	sbic PORTD, $0
-    ;in button_input, $0						; TODO: Read button 1
-    ;sbrc button_input, 0					; TODO: If high voltage (button not pressed), increment counter
-    inc bounce_counter
+	sbic PIND, @0							; If the button is pressed, skip next line
+    inc bounce_counter						; If the button is NOT pressed, increase counter
+	sbis PIND, @0							; If the button is not pressed, skip the next line
+    dec bounce_counter						; If the button is pressed, decrease counter
 
-	sbis PORTD, $0
-    ;sbrs button_input, 0					; TODO: If low voltage (button pressed), decrement counter
-    dec bounce_counter
+    tst bounce_counter					; If bounce_counter reaches zero, move to waiting_button_release
+    breq waiting_button_release
 
-
-    cpi bounce_counter, 0					; If bounce_counter reaches zero, move to button_pressed
-    breq return_button_pressed
-
-
-    cpi bounce_counter, 20					; Button pressed if the user pressed the button for (20-10)ms
+	cpi bounce_counter, 20					; Button pressed if the user pressed the button for (20-10)ms
     breq return_button_not_pressed
 
-
     rjmp loop_button
+waiting_button_release:						; Button pressed, clear all bits in button_input register
+	rcall sleep_1ms
+	sbic PIND, @0							; If the button is not pressed, skip the next line
+    inc bounce_counter						; If the button is pressed, decrease counter
 
+	cpi bounce_counter, 20
+	breq return_button_pressed
 
-return_button_pressed:						; Button pressed, clear all bits in button_input register
-    clr button_input
-
-
+	rjmp waiting_button_release
 return_button_not_pressed:					; Button not pressed, set all bits in button_input register
     ser button_input
-
-
+	rjmp button_pressed_end
+return_button_pressed:
+	clr button_input
+	rjmp button_pressed_end
+button_pressed_end:
+	nop
 .endmacro
 
-
+; The macro is used to set delay.
 .macro delay
-    ldi delay_counter, 300					; Set delay counter to 300
-
+    ldi delay_counter, 255					; Set delay counter to 300
 loop_delay:
-    rcall sleep_1ms
+    rcall sleep_5ms
     dec delay_counter
-    cp delay_counter, 0
+    TST delay_counter
     breq end_delay
-
+	jmp loop_delay
 end_delay:
     nop
 .endmacro
 
+.macro stop_button_pressed
+	button_pressed 0
+	sbrs button_input, 1
+	jmp main
+.endmacro
 
+; Main function starts here.
 setup:
     ;; LED
     ; Set PORT C for output
@@ -131,88 +134,93 @@ setup:
     ser r17
     out PORTD, r17
 
-
 main:
     clr r16								; clear r16 and set lights to OFF
     out PORTC, r16
-	ldi state, 1						; reset state to 1 (everything to 0)
+	ldi state, 1						; reset state to 0 (everything to 0)
 
     rjmp listener						; Jump to listener
 
 ; Assumptions
 ; 1. If we press the first button more than 4 times (without second button involved), the board won't do anything, it will stay at the last LED pattern
 ; 2. While the pattern is displaying, we won't interupt the displaying
-; 3. TODO: figure out how long we need / can press the button for
 listener:
-    ldi bounce_counter, 10				; Initialise bounce counter to 10
+    button_pressed 1					; If the first button is pressed
+    tst button_input
+    breq set_pattern					; Go to set_pattern
 
-    button_pressed 0					; TODO: if the first button is pressed
-    cpi button_input, 0					; If the first button is bressed
-    breq increment_state				; Go to increment_state
+jmp_to_main1:
+	jmp setup
 
-	button_pressed 1					; TODO
-    cpi button_input, 0					; If the second button is pressed
-    breq main							; go to main (which is to reset everything)
-	
-	rjmp listener
+jmp_to_continues_pattern:
+	jmp continues_pattern
 
-
-; 00000001 off, initial state	
-; 00000010 pattern 1
-; 00000100 pattern 2
-; 00001000 pattern 3
-; 00010000 pattern 4
-; 00100000 bit 5 is set, loop back to off
-increment_state:
-	sbrc state, 4						; if bit 4 is set
-	rjmp continues_pattern				; go to continues_pattern
-    lsl state                           ; bitshift left state
-    rjmp set_pattern					; go to set_pattern
-
-; When first button pressed, we go to this section
-; 
+; When first button pressed less than 4 times, we go to this section
 set_pattern:
-    ;sbrc state, 0                        ; if bit 0 is set, clear the LED
-    ;clr r16
-	;sbrc state, 0                        ; if bit 0 is set, clear the LED, maybe TODO: figure out a better way to do that
-    ;out PORTC, r16
+	clr r16
+	out PORTC,r16
 
-
-    sbrc state, 1                        ; If bit 1 is set, display pattern 1
+display_1:
     out PORTC, pattern_1
+	delay
 
-    sbrc state, 2                        ; If bit 2 is set, display pattern 2
+check_1:
+	stop_button_pressed
+	button_pressed 1
+    tst button_input					; If the first button is pressed
+    breq display_2						; go to display_2
+	rjmp check_1
+
+display_2:
     out PORTC, pattern_2
+	delay
 
-    sbrc state, 3                        ; If bit 3 is set, display pattern 3
+check_2:
+	stop_button_pressed
+	button_pressed 1
+    tst button_input					; If the first button is pressed
+    breq display_3						; go to display_2
+	rjmp check_2
+
+jmp_to_main2:
+	jmp setup
+
+display_3:
     out PORTC, pattern_3
+	delay
 
-    rjmp listener
+check_3:
+	stop_button_pressed
+	button_pressed 1
+    tst button_input					; If the first button is pressed
+    breq continues_pattern				; go to display_2
+	rjmp check_3
 
+; To fix "Relative branch out of reach"
+jmp_to_main3:
+	jmp setup
 
+; Display continues pattern
 continues_pattern:
-	button_pressed PORTD				; TODO
-    cpi button_input, 0					; If the second button is pressed
-    breq main							; go to main (which is to reset everything)
+	stop_button_pressed
 
     out PORTC, pattern_1
 	delay
-
-	; repeating this to handle the corner case of pressing the button while the 2nd pattern is showing
-	button_pressed PORTD				; TODO
-    cpi button_input, 0					; If the second button is pressed
-    breq main							; go to main (which is to reset everything)
+	
+	stop_button_pressed
 
     out PORTC, pattern_2
 	delay
 
-	; repeating this to handle the corner case of pressing the button while the 3rd pattern is showing
-	button_pressed PORTD				; TODO
-    cpi button_input, 0					; If the second button is pressed
-    breq main							; go to main (which is to reset everything)
-
+	stop_button_pressed
+	
     out PORTC, pattern_3
 	delay
 
-	rjmp continues_pattern
+	jmp continues_pattern
 
+; To fix "Relative branch out of reach"
+jmp_to_main4:
+	jmp setup
+end:
+	rjmp end
