@@ -78,9 +78,9 @@ end_decimal_to_digits:
 
 .macro hex_to_ascii
 	ldi temp1, 10
-	cp @0, temp1						;compare @0 with 10
-	brsh convert_to_hex_letter			;if @0 >= 10, convert to letter
-	ldi temp1, -'0'						;else, convert to number ascii
+	cp @0, temp1						; compare @0 with 10
+	brsh convert_to_hex_letter			; if @0 >= 10, convert to letter
+	ldi temp1, -'0'						; else, convert to number ascii
 	sub @0, temp1
 	rjmp end_hex_to_ascii
 convert_to_hex_letter:
@@ -96,14 +96,14 @@ end_hex_to_ascii:
 ; @0-temp_running_result
 ; Finding the remainder of temp_running_result and 16, and store the value in temp_running_result
 .macro divide_by_hex
-	clr temp1				;temp1 = 0, temp1 is used to find the division result
+	clr temp1							; temp1 = 0, temp1 is used to find the division result
 start:
-	cpi @0, 16				;compare a and b
-	brsh minus				;if a >= b, go to minus
-	rjmp end				;else go to the end
+	cpi @0, 16							; compare temp_running_result and 16
+	brsh minus							; if temp_running_result >= 16, go to minus
+	rjmp end							; else go to the end
 minus:
-	subi @0, 16				;a = a - b
-	inc temp1				;temp1 += 1
+	subi @0, 16							; temp_running_result -= 16
+	inc temp1							; temp1 += 1
 	rjmp start
 end:
 	nop
