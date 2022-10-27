@@ -30,9 +30,9 @@
 .def hex_1 = r3							; place to store hex digits
 .def hex_2 = r4
 
-.def unit = r2							; mark whether decimal or hex showing. 1 = decimal. 0 = hex.
+.def unit = r2							; mark whether decimal or hex showing. 0 = decimal. 1 = hex.
 
-.equ KEYPAD_PORTDIR = 0xF0				; use PortD for input/output from keypad: PF7-4, output, PF3-0, input
+.equ KEYPAD_PORTDIR = 0xF0				; use PortL for input/output from keypad: PF7-4, output, PF3-0, input
 .equ INITCOLMASK = 0xEF					; scan from the leftmost column, the value to mask output
 .equ INITROWMASK = 0x01					; scan from the bottom row
 .equ ROWMASK = 0x0F						; low four bits are output from the keypad. This value mask the high 4 bits.
@@ -122,19 +122,20 @@ end:
 
 /* Task macros */
 .macro check_overflow
+	brcs overflow
+	;brvs overflow						; if overflow bit set, jump to overflow
 	tst @0								; If @0 is not zero, jump to overflow.
 	brne overflow
 
-	brvs overflow						; if overflow bit set, jump to overflow
 	rjmp exit_overflow
+
 overflow:
 	ldi temp2, 0xFE						; blink pattern
-	out PORTC, temp1
-	rcall sleep_5ms	
-	rcall sleep_5ms
-	rcall sleep_5ms							
+	out PORTC, temp2
+	wait
+	wait							
 	ldi temp2, 0x00						; clear blink
-	out PORTC, temp1
+	out PORTC, temp2
 exit_overflow:
 	nop
 .endmacro
@@ -143,8 +144,8 @@ exit_overflow:
 	ldi temp2, 10
 	mul number_temp, temp2
 
-	mov number_temp, r0					; TODO: why do we need this?
-	add number_temp, @0					; Add the parameter
+	mov number_temp, r0					; Store multiplied value to number_temp
+	adc number_temp, @0					; Add the parameter
 
 	check_overflow r1					; flash if r1 != 0 or overflow is detected
 
@@ -268,7 +269,7 @@ sleep_5ms:
 /* END LCD MACROS */
 
 reset:
-	ldi temp1, KEYPAD_PORTDIR			; Port D columns are outputs, rows are inputs
+	ldi temp1, KEYPAD_PORTDIR			; Port L columns are outputs, rows are inputs
 	sts	DDRL, temp1
 	ser temp1							; PORTC is outputs for LED
 	out DDRC, temp1				
@@ -295,7 +296,9 @@ reset:
 	do_lcd_command 0b00001000			; display off
 	do_lcd_command 0b00000001			; clear display
 	do_lcd_command 0b00000110			; increment, no display shift
-	do_lcd_command 0b00001111			; Cursor on, bar, no blink
+	do_lcd_command 0b00001111			; Cursor on, bar, blink
+
+
 
 main:
 	ldi cmask, INITCOLMASK				; initial column mask 1110 1111
@@ -309,7 +312,7 @@ delay:
 	dec temp1							; decrease temp1, temp1 -= 1
 	brne delay							; if temp1 is not 0x00, branch to delay, else continue
 
-	lds	temp1, PINL						; read PORTD, we care about low bits R0 (P1), R1 (P2), R3 (P3), R4 (P4) so mask off high bits
+	lds	temp1, PINL						; read PORTL, we care about low bits R0 (P1), R1 (P2), R3 (P3), R4 (P4) so mask off high bits
 	andi temp1, ROWMASK
 	cpi temp1, 0xF						; check if any rows are on, i.e., any button is pressed
 	breq nextcol	
@@ -377,11 +380,12 @@ show_decimal:
 	decimal_to_ascii digit_1
 	decimal_to_ascii digit_2
 	decimal_to_ascii digit_3
+	ldi temp1, '0'						; display an empty space to clear hex display
+	do_lcd_data temp1
 	do_lcd_data digit_1
 	do_lcd_data digit_2
 	do_lcd_data digit_3
-	ldi temp1, ' '						; display an empty space to clear hex display
-	do_lcd_data temp1
+
 	rjmp main
 
 show_hex:
@@ -404,7 +408,7 @@ letter_d:
 	do_lcd_data temp1
 
 	add running_result, number_temp		; Add running_result and number_temp
-	clr r1								; TODO: should we clear r0? clear r1 (so no overflow is flagged from that in the macro, just check overflow bit)
+	clr r1								; clear r1 (so no overflow is flagged from that in the macro, just check overflow bit)
 	check_overflow r1
 
 	do_lcd_command 0b11000000			; move to second row
@@ -422,7 +426,7 @@ symbols:
 hash:
 	mul running_result, number_temp		; Multiply first two numbers
 	mov running_result, r0				; Store the result to running_result
-	check_overflow r1					; TODO: this doesn't work for 100*100
+	check_overflow r1					; Check overflow and flash
 	clr number_temp						; Clear number_temp as a symble detected and we need to reset this value
 	ldi temp1, '+'						; Load + symble to temp1
 	do_lcd_data temp1					; Display +
@@ -446,4 +450,4 @@ number_detected:
 	jmp end
 
 end:
-	jmp main							; restart main loop TODO
+	jmp main							; restart main loop
