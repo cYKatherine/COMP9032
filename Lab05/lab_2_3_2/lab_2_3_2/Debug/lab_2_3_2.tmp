@@ -1,0 +1,32 @@
+<ASSEMBLER_INFO>
+ <VERSION>2.2.8</VERSION>
+ <DEVICE>"ATmega2560"</DEVICE>
+ <WORKING_DIR>E:\UNSW\COMP9032\Lab\Lab05\lab_2_3_2\lab_2_3_2\Debug</WORKING_DIR>
+ <INCLUDE_PATH>
+  <DIR>D:/Atmel\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc</DIR>
+  <DIR>D:\Atmel\7.0\toolchain\avr8\avrassembler\Include</DIR>
+  <DIR></DIR>
+ </INCLUDE_PATH>
+ <SOURCE_FILE>E:\UNSW\COMP9032\Lab\Lab05\lab_2_3_2\lab_2_3_2\main.asm</SOURCE_FILE>
+ <INCLUDED_FILES>
+  <FILE>D:/Atmel\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m2560def.inc</FILE>
+ </INCLUDED_FILES>
+ <OBJECT_FILES>
+  <FILE>E:\UNSW\COMP9032\Lab\Lab05\lab_2_3_2\lab_2_3_2\Debug\lab_2_3_2.obj</FILE>
+ </OBJECT_FILES>
+ <HEX_FILES>
+  <FILE>lab_2_3_2.hex</FILE>
+ </HEX_FILES>
+ <OUTPUT_FILES>
+  <FILE>lab_2_3_2.map</FILE>
+  <FILE>lab_2_3_2.lss</FILE>
+ </OUTPUT_FILES>
+ <LABELS>
+  <main><FILE>E:\UNSW\COMP9032\Lab\Lab05\lab_2_3_2\lab_2_3_2\main.asm</FILE><LINE>39</LINE></main>
+  <SPI_INIT><FILE>E:\UNSW\COMP9032\Lab\Lab05\lab_2_3_2\lab_2_3_2\main.asm</FILE><LINE>16</LINE></SPI_INIT>
+  <gcd><FILE>E:\UNSW\COMP9032\Lab\Lab05\lab_2_3_2\lab_2_3_2\main.asm</FILE><LINE>54</LINE></gcd>
+  <end><FILE>E:\UNSW\COMP9032\Lab\Lab05\lab_2_3_2\lab_2_3_2\main.asm</FILE><LINE>50</LINE></end>
+  <L2><FILE>E:\UNSW\COMP9032\Lab\Lab05\lab_2_3_2\lab_2_3_2\main.asm</FILE><LINE>73</LINE></L2>
+  <L1><FILE>E:\UNSW\COMP9032\Lab\Lab05\lab_2_3_2\lab_2_3_2\main.asm</FILE><LINE>79</LINE></L1>
+ </LABELS>
+</ASSEMBLER_INFO>

@@ -1,0 +1,28 @@
+<ASSEMBLER_INFO>
+ <VERSION>2.2.8</VERSION>
+ <DEVICE>"ATmega2560"</DEVICE>
+ <WORKING_DIR>E:\UNSW\COMP9032\Lab\Lab00\lab_0\lab_0\Debug</WORKING_DIR>
+ <INCLUDE_PATH>
+  <DIR>D:/Atmel\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc</DIR>
+  <DIR>D:\Atmel\7.0\toolchain\avr8\avrassembler\Include</DIR>
+  <DIR></DIR>
+ </INCLUDE_PATH>
+ <SOURCE_FILE>E:\UNSW\COMP9032\Lab\Lab00\lab_0\lab_0\main.asm</SOURCE_FILE>
+ <INCLUDED_FILES>
+  <FILE>D:/Atmel\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m2560def.inc</FILE>
+ </INCLUDED_FILES>
+ <OBJECT_FILES>
+  <FILE>E:\UNSW\COMP9032\Lab\Lab00\lab_0\lab_0\Debug\lab_0.obj</FILE>
+ </OBJECT_FILES>
+ <HEX_FILES>
+  <FILE>lab_0.hex</FILE>
+ </HEX_FILES>
+ <OUTPUT_FILES>
+  <FILE>lab_0.map</FILE>
+  <FILE>lab_0.lss</FILE>
+ </OUTPUT_FILES>
+ <LABELS>
+  <main><FILE>E:\UNSW\COMP9032\Lab\Lab00\lab_0\lab_0\main.asm</FILE><LINE>15</LINE></main>
+  <halt><FILE>E:\UNSW\COMP9032\Lab\Lab00\lab_0\lab_0\main.asm</FILE><LINE>21</LINE></halt>
+ </LABELS>
+</ASSEMBLER_INFO>
