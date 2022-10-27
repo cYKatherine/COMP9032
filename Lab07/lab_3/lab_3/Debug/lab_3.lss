@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm Thu Oct 27 09:58:41 2022
+AVRASM ver. 2.2.8  E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm Thu Oct 27 17:48:07 2022
 
 [builtin](2): Including file 'D:/Atmel\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m2560def.inc'
 E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m2560def.inc'
@@ -2009,9 +2009,8 @@ E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.
                                  
                                  
                                  /* Task macros */
-                                 .macro check_overflow
-                                 	brcs overflow
-                                 	;brvs overflow						; if overflow bit set, jump to overflow
+                                 .macro check_overflow					; Check two things: multiplication overflow, and carry overflow from addition
+                                 	brcs overflow						; if carry bit is set, go to overflow
                                  	tst @0								; If @0 is not zero, jump to overflow.
                                  	brne overflow
                                  
@@ -2032,7 +2031,7 @@ E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.
                                  	ldi temp2, 10
                                  	mul number_temp, temp2
                                  
-                                 	mov number_temp, r0					; TODO: why do we need this?
+                                 	mov number_temp, r0					; Store multiplied value to number_temp
                                  	adc number_temp, @0					; Add the parameter
                                  
                                  	check_overflow r1					; flash if r1 != 0 or overflow is detected
@@ -2202,320 +2201,326 @@ E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.
 000065 df9c
 000066 dfb5                      	do_lcd_command 0b00001111			; Cursor on, bar, blink
                                  
+000067 ef4f                      	ser temp1
+000068 2e24                      	mov unit, temp1						; initialise unit to 1 = decimal
                                  
                                  
                                  main:
-000067 ee3f                      	ldi cmask, INITCOLMASK				; initial column mask 1110 1111
-000068 2711                      	clr	col								; initial column = 0
+000069 ee3f                      	ldi cmask, INITCOLMASK				; initial column mask 1110 1111
+00006a 2711                      	clr	col								; initial column = 0
                                  colloop:								; Loop through columns C0 (P5) C1 (P6) C2 (P7) C3 (P8), setting voltage to zero
-000069 3014                      	cpi col, 4							; compare col with 4
-00006a f3e1                      	breq main							; When reaching C4, start from 0 again
-00006b 9330 010b                 	sts	PORTL, cmask			
-00006d ef4f                      	ldi temp1, 0xFF						; load 0xff to temp1
+00006b 3014                      	cpi col, 4							; compare col with 4
+00006c f3e1                      	breq main							; When reaching C4, start from 0 again
+00006d 9330 010b                 	sts	PORTL, cmask			
+00006f ef4f                      	ldi temp1, 0xFF						; load 0xff to temp1
                                  delay:
-00006e 954a                      	dec temp1							; decrease temp1, temp1 -= 1
-00006f f7f1                      	brne delay							; if temp1 is not 0x00, branch to delay, else continue
+000070 954a                      	dec temp1							; decrease temp1, temp1 -= 1
+000071 f7f1                      	brne delay							; if temp1 is not 0x00, branch to delay, else continue
                                  
-000070 9140 0109                 	lds	temp1, PINL						; read PORTL, we care about low bits R0 (P1), R1 (P2), R3 (P3), R4 (P4) so mask off high bits
-000072 704f                      	andi temp1, ROWMASK
-000073 304f                      	cpi temp1, 0xF						; check if any rows are on, i.e., any button is pressed
-000074 f059                      	breq nextcol	
+000072 9140 0109                 	lds	temp1, PINL						; read PORTL, we care about low bits R0 (P1), R1 (P2), R3 (P3), R4 (P4) so mask off high bits
+000074 704f                      	andi temp1, ROWMASK
+000075 304f                      	cpi temp1, 0xF						; check if any rows are on, i.e., any button is pressed
+000076 f059                      	breq nextcol	
                                  										; if yes, find which row is on
-000075 e021                      	ldi rmask, INITROWMASK				; initialise row check 0000 0001
-000076 2700                      	clr	row								; initial row = 0
+000077 e021                      	ldi rmask, INITROWMASK				; initialise row check 0000 0001
+000078 2700                      	clr	row								; initial row = 0
                                  rowloop:
-000077 3004                      	cpi row, 4							; Loop through rows R0, R1, R2, R3. When reaching R4, row scan is over. No press detected.
-000078 f039                      	breq nextcol						; if row = 4, branch to nextcol
-000079 2f54                      	mov temp2, temp1					; Save reading from Port D input in temporary location.
-00007a 2352                      	and temp2, rmask					; check masked bit. If masked bit is high, press not detected. Otherwise, press detected.
-00007b f041                      	breq convert 						; if bit is clear, convert the bitcode
-00007c 9503                      	inc row								; else move to the next row
-00007d 0f22                      	lsl rmask							; shift the mask to the next bit
-00007e 940c 0077                 	jmp rowloop
+000079 3004                      	cpi row, 4							; Loop through rows R0, R1, R2, R3. When reaching R4, row scan is over. No press detected.
+00007a f039                      	breq nextcol						; if row = 4, branch to nextcol
+00007b 2f54                      	mov temp2, temp1					; Save reading from Port D input in temporary location.
+00007c 2352                      	and temp2, rmask					; check masked bit. If masked bit is high, press not detected. Otherwise, press detected.
+00007d f041                      	breq convert 						; if bit is clear, convert the bitcode
+00007e 9503                      	inc row								; else move to the next row
+00007f 0f22                      	lsl rmask							; shift the mask to the next bit
+000080 940c 0079                 	jmp rowloop
                                  
                                  nextcol:
-000080 0f33                      	lsl cmask							; else get new mask by shifting left and 
-000081 9513                      	inc col								; increment column value
-000082 940c 0069                 	jmp colloop							; and check the next column
+000082 0f33                      	lsl cmask							; else get new mask by shifting left and 
+000083 9513                      	inc col								; increment column value
+000084 940c 006b                 	jmp colloop							; and check the next column
                                  
                                  convert:
-000084 ef7f
-000085 957a
-000086 2377
-000087 f011
-000088 dfa6
-000089 cffb
-00008a 0000                      	wait
-00008b 3013                      	cpi col, 3							; if column is 3 we have a letter
-00008c f069                      	breq letters						; branch to letters
-00008d 3003                      	cpi row, 3							; if row is 3 we have a symbol or 0
-00008e f039                      	breq symbols_jmp1					; branch to symbols
+000086 ef7f
+000087 957a
+000088 2377
+000089 f011
+00008a dfa4
+00008b cffb
+00008c 0000                      	wait
+00008d 3013                      	cpi col, 3							; if column is 3 we have a letter
+00008e f069                      	breq letters						; branch to letters
+00008f 3003                      	cpi row, 3							; if row is 3 we have a symbol or 0
+000090 f039                      	breq symbols_jmp1					; branch to symbols
                                  
                                  	; We have a number in 1-9, start filling the "buffer"
-00008f 2f40                      	mov temp1, row						; otherwise we have a number in 1-9
+000091 2f40                      	mov temp1, row						; otherwise we have a number in 1-9
                                  	; To get the actual value, temp1 = row * 3 + col + 1
-000090 0f44                      	lsl temp1							; temp1 left shift, temp1 = 2 * row
-000091 0f40                      	add temp1, row						; temp1 += row
-000092 0f41                      	add temp1, col						; add the column address to get the value
-000093 9543                      	inc temp1							; temp1 += 1
+000092 0f44                      	lsl temp1							; temp1 left shift, temp1 = 2 * row
+000093 0f40                      	add temp1, row						; temp1 += row
+000094 0f41                      	add temp1, col						; add the column address to get the value
+000095 9543                      	inc temp1							; temp1 += 1
                                  
-000094 940c 0157                 	jmp number_detected
+000096 940c 015c                 	jmp number_detected
                                  
                                  symbols_jmp1:
-000096 940c 012a                 	jmp symbols
+000098 940c 012f                 	jmp symbols
                                  
                                  letter_d_jmp1:
-000098 940c 0109                 	jmp letter_d
+00009a 940c 010e                 	jmp letter_d
                                  
                                  letters:
-00009a 3002                      	cpi row, 2							; If row is 2 we have C
-00009b f021                      	breq letter_c
+00009c 3002                      	cpi row, 2							; If row is 2 we have C
+00009d f021                      	breq letter_c
                                  
-00009c 3003                      	cpi row, 3							; if row is 3 we have D
-00009d f3d1                      	breq letter_d_jmp1
+00009e 3003                      	cpi row, 3							; if row is 3 we have D
+00009f f3d1                      	breq letter_d_jmp1
                                  
-00009e 940c 017a                 	jmp end
+0000a0 940c 017f                 	jmp end
                                  
                                  letter_c:
-0000a0 ef4f                      	ser temp1							; Set temp1 to be 0xFF
-0000a1 2624                      	eor unit, temp1						; unit XOR 0xFF, toggle convert
-0000a2 2022                      	tst unit
-0000a3 f141                      	breq show_hex						; if unit=1, we are showing hex, otherwise show decimal
+0000a2 ef4f                      	ser temp1							; Set temp1 to be 0xFF
+0000a3 2624                      	eor unit, temp1						; unit XOR 0xFF, toggle convert
+0000a4 2022                      	tst unit
+0000a5 f159                      	breq show_hex						; if unit=1, show decimal, otherwise hex
                                  
                                  show_decimal:
-0000a4 ec90
-0000a5 df5c
-0000a6 df75                      	do_lcd_command 0b11000000			; Move cursor to front of second row
+0000a6 ec90
+0000a7 df5a
+0000a8 df73                      	do_lcd_command 0b11000000			; Move cursor to front of second row
                                  	; Convert decimal number to string and load digits for displaying
-0000a7 2f56                      	mov temp2, running_result	
-0000a8 2455
-0000a9 2466
-0000aa 2477
-0000ab 3654
-0000ac f420
-0000ad 305a
-0000ae f428
-0000af 2e75
-0000b0 c006
-0000b1 5654
-0000b2 9453
-0000b3 cff7
-0000b4 505a
-0000b5 9463
-0000b6 cff6
-0000b7 0000                      	decimal_to_digits temp2	
-0000b8 ed40
-0000b9 1a54                      	decimal_to_ascii digit_1
+0000a9 2f56                      	mov temp2, running_result	
+0000aa 2455
+0000ab 2466
+0000ac 2477
+0000ad 3654
+0000ae f420
+0000af 305a
+0000b0 f428
+0000b1 2e75
+0000b2 c006
+0000b3 5654
+0000b4 9453
+0000b5 cff7
+0000b6 505a
+0000b7 9463
+0000b8 cff6
+0000b9 0000                      	decimal_to_digits temp2	
 0000ba ed40
-0000bb 1a64                      	decimal_to_ascii digit_2
+0000bb 1a54                      	decimal_to_ascii digit_1
 0000bc ed40
-0000bd 1a74                      	decimal_to_ascii digit_3
-0000be e340                      	ldi temp1, '0'						; display an empty space to clear hex display
-0000bf 2f94
-0000c0 df4c
-0000c1 df5a                      	do_lcd_data temp1
-0000c2 2d95
-0000c3 df49
-0000c4 df57                      	do_lcd_data digit_1
-0000c5 2d96
-0000c6 df46
-0000c7 df54                      	do_lcd_data digit_2
-0000c8 2d97
-0000c9 df43
-0000ca df51                      	do_lcd_data digit_3
+0000bd 1a64                      	decimal_to_ascii digit_2
+0000be ed40
+0000bf 1a74                      	decimal_to_ascii digit_3
                                  
-0000cb cf9b                      	rjmp main
+0000c0 2d95
+0000c1 df4b
+0000c2 df59                      	do_lcd_data digit_1
+0000c3 2d96
+0000c4 df48
+0000c5 df56                      	do_lcd_data digit_2
+0000c6 2d97
+0000c7 df45
+0000c8 df53                      	do_lcd_data digit_3
+0000c9 e240                      	ldi temp1, ' '						; display an empty space to clear hex display
+0000ca 2f94
+0000cb df41
+0000cc df4f                      	do_lcd_data temp1
+0000cd e190
+0000ce df33
+0000cf df4c                      	do_lcd_command 0b00010000
+                                 
+0000d0 cf98                      	rjmp main
                                  
                                  show_hex:
-0000cc ec90
-0000cd df34
-0000ce df4d                      	do_lcd_command 0b11000000			; Move cursor to front of second row
+0000d1 ec90
+0000d2 df2f
+0000d3 df48                      	do_lcd_command 0b11000000			; Move cursor to front of second row
                                  	; Convert decimal number to hex and load digits for displaying
-0000cf 2f56                      	mov temp2, running_result
-0000d0 2744
-0000d1 3150
-0000d2 f408
-0000d3 c003
-0000d4 5150
-0000d5 9543
-0000d6 cffa
-0000d7 0000
-0000d8 2e45
-0000d9 2f54
-0000da 2744
-0000db 3150
-0000dc f408
-0000dd c003
-0000de 5150
-0000df 9543
-0000e0 cffa
-0000e1 0000
-0000e2 2e35                      	decimal_to_hex temp2
-0000e3 e04a
-0000e4 1634
-0000e5 f418
-0000e6 ed40
-0000e7 1a34
-0000e8 c004
-0000e9 e04a
-0000ea 1a34
-0000eb eb4f
+0000d4 2f56                      	mov temp2, running_result
+0000d5 2744
+0000d6 3150
+0000d7 f408
+0000d8 c003
+0000d9 5150
+0000da 9543
+0000db cffa
+0000dc 0000
+0000dd 2e45
+0000de 2f54
+0000df 2744
+0000e0 3150
+0000e1 f408
+0000e2 c003
+0000e3 5150
+0000e4 9543
+0000e5 cffa
+0000e6 0000
+0000e7 2e35                      	decimal_to_hex temp2
+0000e8 e04a
+0000e9 1634
+0000ea f418
+0000eb ed40
 0000ec 1a34
-0000ed 0000                      	hex_to_ascii hex_1
+0000ed c004
 0000ee e04a
-0000ef 1644
-0000f0 f418
-0000f1 ed40
-0000f2 1a44
-0000f3 c004
-0000f4 e04a
-0000f5 1a44
-0000f6 eb4f
+0000ef 1a34
+0000f0 eb4f
+0000f1 1a34
+0000f2 0000                      	hex_to_ascii hex_1
+0000f3 e04a
+0000f4 1644
+0000f5 f418
+0000f6 ed40
 0000f7 1a44
-0000f8 0000                      	hex_to_ascii hex_2
-0000f9 e340                      	ldi temp1, '0'						; display 0x
-0000fa 2f94
-0000fb df11
-0000fc df1f                      	do_lcd_data temp1
-0000fd e748                      	ldi temp1, 'x'
-0000fe 2f94
-0000ff df0d
-000100 df1b                      	do_lcd_data temp1
-000101 2d93
-000102 df0a
-000103 df18                      	do_lcd_data hex_1
-000104 2d94
-000105 df07
-000106 df15                      	do_lcd_data hex_2
-000107 940c 017a                 	jmp end
+0000f8 c004
+0000f9 e04a
+0000fa 1a44
+0000fb eb4f
+0000fc 1a44
+0000fd 0000                      	hex_to_ascii hex_2
+0000fe e340                      	ldi temp1, '0'						; display 0x
+0000ff 2f94
+000100 df0c
+000101 df1a                      	do_lcd_data temp1
+000102 e748                      	ldi temp1, 'x'
+000103 2f94
+000104 df08
+000105 df16                      	do_lcd_data temp1
+000106 2d93
+000107 df05
+000108 df13                      	do_lcd_data hex_1
+000109 2d94
+00010a df02
+00010b df10                      	do_lcd_data hex_2
+00010c 940c 017f                 	jmp end
                                  
                                  letter_d:
-000109 e34d                      	ldi temp1, '='						; display = symbol
-00010a 2f94
-00010b df01
-00010c df0f                      	do_lcd_data temp1
+00010e e34d                      	ldi temp1, '='						; display = symbol
+00010f 2f94
+000110 defc
+000111 df0a                      	do_lcd_data temp1
                                  
-00010d 0f68                      	add running_result, number_temp		; Add running_result and number_temp
-00010e 2411                      	clr r1								; TODO: should we clear r0? clear r1 (so no overflow is flagged from that in the macro, just check overflow bit)
-00010f f018
-000110 2011
-000111 f409
-000112 c012
-000113 ef5e
-000114 b958
-000115 ef7f
-000116 957a
-000117 2377
-000118 f011
-000119 df15
-00011a cffb
-00011b 0000
-00011c ef7f
-00011d 957a
-00011e 2377
-00011f f011
-000120 df0e
-000121 cffb
-000122 0000
-000123 e050
-000124 b958
-000125 0000                      	check_overflow r1
+000112 0f68                      	add running_result, number_temp		; Add running_result and number_temp
+000113 2411                      	clr r1								; clear r1 (so no overflow is flagged from that in the macro, just check overflow bit)
+000114 f018
+000115 2011
+000116 f409
+000117 c012
+000118 ef5e
+000119 b958
+00011a ef7f
+00011b 957a
+00011c 2377
+00011d f011
+00011e df10
+00011f cffb
+000120 0000
+000121 ef7f
+000122 957a
+000123 2377
+000124 f011
+000125 df09
+000126 cffb
+000127 0000
+000128 e050
+000129 b958
+00012a 0000                      	check_overflow r1
                                  
-000126 ec90
-000127 deda
-000128 def3                      	do_lcd_command 0b11000000			; move to second row
+00012b ec90
+00012c ded5
+00012d deee                      	do_lcd_command 0b11000000			; move to second row
                                  
-000129 cf7a                      	rjmp show_decimal
+00012e cf77                      	rjmp show_decimal
                                  symbols:
-00012a 3010                      	cpi col, 0							; If col is 0 we have star
-00012b f119                      	breq star
-00012c 2744                      	clr temp1							; Clear temp1
+00012f 3010                      	cpi col, 0							; If col is 0 we have star
+000130 f119                      	breq star
+000131 2744                      	clr temp1							; Clear temp1
                                  
-00012d 3011                      	cpi col, 1							; If col is 1 we have zero
-00012e f141                      	breq number_detected					
+000132 3011                      	cpi col, 1							; If col is 1 we have zero
+000133 f141                      	breq number_detected					
                                  
                                  ; Otherwise, we have a hash(+)
                                  hash:
-00012f 9f68                      	mul running_result, number_temp		; Multiply first two numbers
-000130 2d60                      	mov running_result, r0				; Store the result to running_result
-000131 f018
-000132 2011
-000133 f409
-000134 c012
-000135 ef5e
-000136 b958
-000137 ef7f
-000138 957a
-000139 2377
-00013a f011
-00013b def3
-00013c cffb
-00013d 0000
-00013e ef7f
-00013f 957a
-000140 2377
-000141 f011
-000142 deec
-000143 cffb
-000144 0000
-000145 e050
-000146 b958
-000147 0000                      	check_overflow r1					; TODO: this doesn't work for 100*100
-000148 2788                      	clr number_temp						; Clear number_temp as a symble detected and we need to reset this value
-000149 e24b                      	ldi temp1, '+'						; Load + symble to temp1
-00014a 2f94
-00014b dec1
-00014c decf                      	do_lcd_data temp1					; Display +
+000134 9f68                      	mul running_result, number_temp		; Multiply first two numbers
+000135 2d60                      	mov running_result, r0				; Store the result to running_result
+000136 f018
+000137 2011
+000138 f409
+000139 c012
+00013a ef5e
+00013b b958
+00013c ef7f
+00013d 957a
+00013e 2377
+00013f f011
+000140 deee
+000141 cffb
+000142 0000
+000143 ef7f
+000144 957a
+000145 2377
+000146 f011
+000147 dee7
+000148 cffb
+000149 0000
+00014a e050
+00014b b958
+00014c 0000                      	check_overflow r1					; Check overflow and flash
+00014d 2788                      	clr number_temp						; Clear number_temp as a symble detected and we need to reset this value
+00014e e24b                      	ldi temp1, '+'						; Load + symble to temp1
+00014f 2f94
+000150 debc
+000151 deca                      	do_lcd_data temp1					; Display +
                                  
-00014d 940c 017a                 	jmp end
+000152 940c 017f                 	jmp end
                                  
                                  star:
-00014f 2f68                      	mov running_result, number_temp		; Move current number to running_result
-000150 2788                      	clr number_temp						; Clear number_temp waiting for the next number
-000151 e24a                      	ldi temp1, '*'						; store symbol for * and display
-000152 2f94
-000153 deb9
-000154 dec7                      	do_lcd_data temp1
+000154 2f68                      	mov running_result, number_temp		; Move current number to running_result
+000155 2788                      	clr number_temp						; Clear number_temp waiting for the next number
+000156 e24a                      	ldi temp1, '*'						; store symbol for * and display
+000157 2f94
+000158 deb4
+000159 dec2                      	do_lcd_data temp1
                                  
-000155 940c 017a                 	jmp end
+00015a 940c 017f                 	jmp end
                                  
                                  number_detected:
                                  	; Currently, temp1 holds the number we have discovered.
-000157 e05a
-000158 9f85
-000159 2d80
-00015a 1f84
-00015b f018
-00015c 2011
-00015d f409
-00015e c012
-00015f ef5e
-000160 b958
-000161 ef7f
-000162 957a
-000163 2377
-000164 f011
-000165 dec9
-000166 cffb
-000167 0000
-000168 ef7f
-000169 957a
-00016a 2377
-00016b f011
-00016c dec2
-00016d cffb
-00016e 0000
-00016f e050
-000170 b958
-000171 0000
-000172 c000
-000173 0000                      	input_number temp1					; run macro to update nuber
-000174 5d40                      	subi temp1, -'0'
-000175 2f94
-000176 de96
-000177 dea4                      	do_lcd_data temp1					; print digit
+00015c e05a
+00015d 9f85
+00015e 2d80
+00015f 1f84
+000160 f018
+000161 2011
+000162 f409
+000163 c012
+000164 ef5e
+000165 b958
+000166 ef7f
+000167 957a
+000168 2377
+000169 f011
+00016a dec4
+00016b cffb
+00016c 0000
+00016d ef7f
+00016e 957a
+00016f 2377
+000170 f011
+000171 debd
+000172 cffb
+000173 0000
+000174 e050
+000175 b958
+000176 0000
+000177 c000
+000178 0000                      	input_number temp1					; run macro to update nuber
+000179 5d40                      	subi temp1, -'0'
+00017a 2f94
+00017b de91
+00017c de9f                      	do_lcd_data temp1					; print digit
                                  
-000178 940c 017a                 	jmp end
+00017d 940c 017f                 	jmp end
                                  
                                  end:
 
@@ -2535,10 +2540,10 @@ counted separately from r26..r31 here.
 .dseg memory usage only counts static data declared with .byte
 
 "ATmega2560" register use summary:
-x  :   0 y  :   0 z  :   0 r0 :   2 r1 :   4 r2 :   2 r3 :   6 r4 :   6 
+x  :   0 y  :   0 z  :   0 r0 :   2 r1 :   4 r2 :   3 r3 :   6 r4 :   6 
 r5 :   4 r6 :   4 r7 :   4 r8 :   0 r9 :   0 r10:   0 r11:   0 r12:   0 
-r13:   0 r14:   0 r15:   0 r16:   8 r17:   7 r18:   3 r19:   3 r20:  68 
-r21:  30 r22:   7 r23:  21 r24:  13 r25:  38 r26:   0 r27:   0 r28:   0 
+r13:   0 r14:   0 r15:   0 r16:   8 r17:   7 r18:   3 r19:   3 r20:  70 
+r21:  30 r22:   7 r23:  21 r24:  13 r25:  39 r26:   0 r27:   0 r28:   0 
 r29:   0 r30:   0 r31:   0 
 Registers used: 18 out of 35 (51.4%)
 
@@ -2553,13 +2558,13 @@ clc   :   0 clh   :   0 cli   :   0 cln   :   0 clr   :  16 cls   :   0
 clt   :   0 clv   :   0 clz   :   0 com   :   0 cp    :   2 cpc   :   0 
 cpi   :  13 cpse  :   0 dec   :   8 eicall:   0 eijmp :   0 elpm  :   0 
 eor   :   1 fmul  :   0 fmuls :   0 fmulsu:   0 icall :   0 ijmp  :   0 
-in    :   1 inc   :   7 jmp   :  12 ld    :   0 ldd   :   0 ldi   :  41 
-lds   :   1 lpm   :   0 lsl   :   3 lsr   :   0 mov   :  23 movw  :   0 
+in    :   1 inc   :   7 jmp   :  12 ld    :   0 ldd   :   0 ldi   :  42 
+lds   :   1 lpm   :   0 lsl   :   3 lsr   :   0 mov   :  24 movw  :   0 
 mul   :   2 muls  :   0 mulsu :   0 neg   :   0 nop   :  36 or    :   0 
-ori   :   0 out   :  17 pop   :   3 push  :   3 rcall :  60 ret   :   5 
+ori   :   0 out   :  17 pop   :   3 push  :   3 rcall :  62 ret   :   5 
 reti  :   0 rjmp  :  23 rol   :   0 ror   :   0 sbc   :   0 sbci  :   0 
 sbi   :   5 sbic  :   0 sbis  :   0 sbiw  :   1 sbr   :   0 sbrc  :   1 
-sbrs  :   0 sec   :   0 seh   :   0 sei   :   0 sen   :   0 ser   :  11 
+sbrs  :   0 sec   :   0 seh   :   0 sei   :   0 sen   :   0 ser   :  12 
 ses   :   0 set   :   0 sev   :   0 sez   :   0 sleep :   0 spm   :   0 
 st    :   0 std   :   0 sts   :   2 sub   :   9 subi  :   5 swap  :   0 
 tst   :  11 wdr   :   0 
@@ -2568,7 +2573,7 @@ Instructions used: 37 out of 116 (31.9%)
 "ATmega2560" memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x0002f8    760      0    760  262144   0.3%
+[.cseg] 0x000000 0x000302    770      0    770  262144   0.3%
 [.dseg] 0x000200 0x000200      0      0      0    8192   0.0%
 [.eseg] 0x000000 0x000000      0      0      0    4096   0.0%
 

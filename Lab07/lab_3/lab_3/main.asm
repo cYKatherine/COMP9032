@@ -30,7 +30,7 @@
 .def hex_1 = r3							; place to store hex digits
 .def hex_2 = r4
 
-.def unit = r2							; mark whether decimal or hex showing. 0 = decimal. 1 = hex.
+.def unit = r2							; mark whether decimal or hex showing. 1 = decimal. 0 = hex.
 
 .equ KEYPAD_PORTDIR = 0xF0				; use PortL for input/output from keypad: PF7-4, output, PF3-0, input
 .equ INITCOLMASK = 0xEF					; scan from the leftmost column, the value to mask output
@@ -121,9 +121,8 @@ end:
 
 
 /* Task macros */
-.macro check_overflow
-	brcs overflow
-	;brvs overflow						; if overflow bit set, jump to overflow
+.macro check_overflow					; Check two things: multiplication overflow, and carry overflow from addition
+	brcs overflow						; if carry bit is set, go to overflow
 	tst @0								; If @0 is not zero, jump to overflow.
 	brne overflow
 
@@ -298,6 +297,8 @@ reset:
 	do_lcd_command 0b00000110			; increment, no display shift
 	do_lcd_command 0b00001111			; Cursor on, bar, blink
 
+	ser temp1
+	mov unit, temp1						; initialise unit to 1 = decimal
 
 
 main:
@@ -370,7 +371,7 @@ letter_c:
 	ser temp1							; Set temp1 to be 0xFF
 	eor unit, temp1						; unit XOR 0xFF, toggle convert
 	tst unit
-	breq show_hex						; if unit=1, we are showing hex, otherwise show decimal
+	breq show_hex						; if unit=1, show decimal, otherwise hex
 
 show_decimal:
 	do_lcd_command 0b11000000			; Move cursor to front of second row
@@ -380,11 +381,13 @@ show_decimal:
 	decimal_to_ascii digit_1
 	decimal_to_ascii digit_2
 	decimal_to_ascii digit_3
-	ldi temp1, '0'						; display an empty space to clear hex display
-	do_lcd_data temp1
+
 	do_lcd_data digit_1
 	do_lcd_data digit_2
 	do_lcd_data digit_3
+	ldi temp1, ' '						; display an empty space to clear hex display
+	do_lcd_data temp1
+	do_lcd_command 0b00010000
 
 	rjmp main
 

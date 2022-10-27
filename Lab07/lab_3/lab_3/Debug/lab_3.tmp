@@ -22,31 +22,31 @@
   <FILE>lab_3.lss</FILE>
  </OUTPUT_FILES>
  <LABELS>
-  <reset><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>271</LINE></reset>
-  <lcd_command><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>193</LINE></lcd_command>
-  <lcd_data><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>206</LINE></lcd_data>
-  <lcd_wait><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>223</LINE></lcd_wait>
-  <lcd_wait_loop><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>229</LINE></lcd_wait_loop>
-  <sleep_1ms><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>249</LINE></sleep_1ms>
-  <delayloop_1ms><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>254</LINE></delayloop_1ms>
-  <sleep_5ms><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>261</LINE></sleep_5ms>
-  <main><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>303</LINE></main>
-  <colloop><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>306</LINE></colloop>
-  <delay><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>311</LINE></delay>
-  <nextcol><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>332</LINE></nextcol>
-  <rowloop><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>322</LINE></rowloop>
-  <convert><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>337</LINE></convert>
-  <letters><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>360</LINE></letters>
-  <symbols_jmp1><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>354</LINE></symbols_jmp1>
-  <number_detected><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>444</LINE></number_detected>
-  <symbols><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>417</LINE></symbols>
-  <letter_d_jmp1><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>357</LINE></letter_d_jmp1>
-  <letter_d><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>406</LINE></letter_d>
-  <letter_c><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>369</LINE></letter_c>
-  <end><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>452</LINE></end>
-  <show_hex><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>391</LINE></show_hex>
-  <show_decimal><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>375</LINE></show_decimal>
-  <star><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>436</LINE></star>
-  <hash><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>426</LINE></hash>
+  <reset><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>270</LINE></reset>
+  <lcd_command><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>192</LINE></lcd_command>
+  <lcd_data><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>205</LINE></lcd_data>
+  <lcd_wait><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>222</LINE></lcd_wait>
+  <lcd_wait_loop><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>228</LINE></lcd_wait_loop>
+  <sleep_1ms><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>248</LINE></sleep_1ms>
+  <delayloop_1ms><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>253</LINE></delayloop_1ms>
+  <sleep_5ms><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>260</LINE></sleep_5ms>
+  <main><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>304</LINE></main>
+  <colloop><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>307</LINE></colloop>
+  <delay><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>312</LINE></delay>
+  <nextcol><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>333</LINE></nextcol>
+  <rowloop><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>323</LINE></rowloop>
+  <convert><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>338</LINE></convert>
+  <letters><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>361</LINE></letters>
+  <symbols_jmp1><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>355</LINE></symbols_jmp1>
+  <number_detected><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>447</LINE></number_detected>
+  <symbols><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>420</LINE></symbols>
+  <letter_d_jmp1><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>358</LINE></letter_d_jmp1>
+  <letter_d><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>409</LINE></letter_d>
+  <letter_c><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>370</LINE></letter_c>
+  <end><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>455</LINE></end>
+  <show_hex><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>394</LINE></show_hex>
+  <show_decimal><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>376</LINE></show_decimal>
+  <star><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>439</LINE></star>
+  <hash><FILE>E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm</FILE><LINE>429</LINE></hash>
  </LABELS>
 </ASSEMBLER_INFO>
