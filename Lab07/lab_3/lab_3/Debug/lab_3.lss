@@ -1,5 +1,5 @@
 
-AVRASM ver. 2.2.8  E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm Thu Oct 27 17:48:07 2022
+AVRASM ver. 2.2.8  E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm Thu Oct 27 17:59:39 2022
 
 [builtin](2): Including file 'D:/Atmel\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m2560def.inc'
 E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.0\Packs\atmel\ATmega_DFP\1.7.374\avrasm\inc\m2560def.inc'
@@ -2023,6 +2023,8 @@ E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.
                                  	wait							
                                  	ldi temp2, 0x00						; clear blink
                                  	out PORTC, temp2
+                                 
+                                 	rjmp reset
                                  exit_overflow:
                                  	nop
                                  .endmacro
@@ -2260,10 +2262,10 @@ E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.
 000094 0f41                      	add temp1, col						; add the column address to get the value
 000095 9543                      	inc temp1							; temp1 += 1
                                  
-000096 940c 015c                 	jmp number_detected
+000096 940c 015e                 	jmp number_detected
                                  
                                  symbols_jmp1:
-000098 940c 012f                 	jmp symbols
+000098 940c 0130                 	jmp symbols
                                  
                                  letter_d_jmp1:
 00009a 940c 010e                 	jmp letter_d
@@ -2275,7 +2277,7 @@ E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.
 00009e 3003                      	cpi row, 3							; if row is 3 we have D
 00009f f3d1                      	breq letter_d_jmp1
                                  
-0000a0 940c 017f                 	jmp end
+0000a0 940c 0182                 	jmp end
                                  
                                  letter_c:
 0000a2 ef4f                      	ser temp1							; Set temp1 to be 0xFF
@@ -2392,7 +2394,7 @@ E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.
 000109 2d94
 00010a df02
 00010b df10                      	do_lcd_data hex_2
-00010c 940c 017f                 	jmp end
+00010c 940c 0182                 	jmp end
                                  
                                  letter_d:
 00010e e34d                      	ldi temp1, '='						; display = symbol
@@ -2405,7 +2407,7 @@ E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.
 000114 f018
 000115 2011
 000116 f409
-000117 c012
+000117 c013
 000118 ef5e
 000119 b958
 00011a ef7f
@@ -2424,103 +2426,106 @@ E:\UNSW\COMP9032\Lab\Lab07\lab_3\lab_3\main.asm(13): Including file 'D:/Atmel\7.
 000127 0000
 000128 e050
 000129 b958
-00012a 0000                      	check_overflow r1
+00012a cf13
+00012b 0000                      	check_overflow r1
                                  
-00012b ec90
-00012c ded5
-00012d deee                      	do_lcd_command 0b11000000			; move to second row
+00012c ec90
+00012d ded4
+00012e deed                      	do_lcd_command 0b11000000			; move to second row
                                  
-00012e cf77                      	rjmp show_decimal
+00012f cf76                      	rjmp show_decimal
                                  symbols:
-00012f 3010                      	cpi col, 0							; If col is 0 we have star
-000130 f119                      	breq star
-000131 2744                      	clr temp1							; Clear temp1
+000130 3010                      	cpi col, 0							; If col is 0 we have star
+000131 f121                      	breq star
+000132 2744                      	clr temp1							; Clear temp1
                                  
-000132 3011                      	cpi col, 1							; If col is 1 we have zero
-000133 f141                      	breq number_detected					
+000133 3011                      	cpi col, 1							; If col is 1 we have zero
+000134 f149                      	breq number_detected					
                                  
                                  ; Otherwise, we have a hash(+)
                                  hash:
-000134 9f68                      	mul running_result, number_temp		; Multiply first two numbers
-000135 2d60                      	mov running_result, r0				; Store the result to running_result
-000136 f018
-000137 2011
-000138 f409
-000139 c012
-00013a ef5e
-00013b b958
-00013c ef7f
-00013d 957a
-00013e 2377
-00013f f011
-000140 deee
-000141 cffb
-000142 0000
-000143 ef7f
-000144 957a
-000145 2377
-000146 f011
-000147 dee7
-000148 cffb
-000149 0000
-00014a e050
-00014b b958
-00014c 0000                      	check_overflow r1					; Check overflow and flash
-00014d 2788                      	clr number_temp						; Clear number_temp as a symble detected and we need to reset this value
-00014e e24b                      	ldi temp1, '+'						; Load + symble to temp1
-00014f 2f94
-000150 debc
-000151 deca                      	do_lcd_data temp1					; Display +
+000135 9f68                      	mul running_result, number_temp		; Multiply first two numbers
+000136 2d60                      	mov running_result, r0				; Store the result to running_result
+000137 f018
+000138 2011
+000139 f409
+00013a c013
+00013b ef5e
+00013c b958
+00013d ef7f
+00013e 957a
+00013f 2377
+000140 f011
+000141 deed
+000142 cffb
+000143 0000
+000144 ef7f
+000145 957a
+000146 2377
+000147 f011
+000148 dee6
+000149 cffb
+00014a 0000
+00014b e050
+00014c b958
+00014d cef0
+00014e 0000                      	check_overflow r1					; Check overflow and flash
+00014f 2788                      	clr number_temp						; Clear number_temp as a symble detected and we need to reset this value
+000150 e24b                      	ldi temp1, '+'						; Load + symble to temp1
+000151 2f94
+000152 deba
+000153 dec8                      	do_lcd_data temp1					; Display +
                                  
-000152 940c 017f                 	jmp end
+000154 940c 0182                 	jmp end
                                  
                                  star:
-000154 2f68                      	mov running_result, number_temp		; Move current number to running_result
-000155 2788                      	clr number_temp						; Clear number_temp waiting for the next number
-000156 e24a                      	ldi temp1, '*'						; store symbol for * and display
-000157 2f94
-000158 deb4
-000159 dec2                      	do_lcd_data temp1
+000156 2f68                      	mov running_result, number_temp		; Move current number to running_result
+000157 2788                      	clr number_temp						; Clear number_temp waiting for the next number
+000158 e24a                      	ldi temp1, '*'						; store symbol for * and display
+000159 2f94
+00015a deb2
+00015b dec0                      	do_lcd_data temp1
                                  
-00015a 940c 017f                 	jmp end
+00015c 940c 0182                 	jmp end
                                  
                                  number_detected:
                                  	; Currently, temp1 holds the number we have discovered.
-00015c e05a
-00015d 9f85
-00015e 2d80
-00015f 1f84
-000160 f018
-000161 2011
-000162 f409
-000163 c012
-000164 ef5e
-000165 b958
-000166 ef7f
-000167 957a
-000168 2377
-000169 f011
-00016a dec4
-00016b cffb
-00016c 0000
-00016d ef7f
-00016e 957a
-00016f 2377
-000170 f011
-000171 debd
-000172 cffb
-000173 0000
-000174 e050
-000175 b958
-000176 0000
-000177 c000
-000178 0000                      	input_number temp1					; run macro to update nuber
-000179 5d40                      	subi temp1, -'0'
-00017a 2f94
-00017b de91
-00017c de9f                      	do_lcd_data temp1					; print digit
+00015e e05a
+00015f 9f85
+000160 2d80
+000161 1f84
+000162 f018
+000163 2011
+000164 f409
+000165 c013
+000166 ef5e
+000167 b958
+000168 ef7f
+000169 957a
+00016a 2377
+00016b f011
+00016c dec2
+00016d cffb
+00016e 0000
+00016f ef7f
+000170 957a
+000171 2377
+000172 f011
+000173 debb
+000174 cffb
+000175 0000
+000176 e050
+000177 b958
+000178 cec5
+000179 0000
+00017a c000
+00017b 0000                      	input_number temp1					; run macro to update nuber
+00017c 5d40                      	subi temp1, -'0'
+00017d 2f94
+00017e de8e
+00017f de9c                      	do_lcd_data temp1					; print digit
                                  
-00017d 940c 017f                 	jmp end
+000180 940c 0182                 	jmp end
                                  
                                  end:
 
@@ -2562,7 +2567,7 @@ in    :   1 inc   :   7 jmp   :  12 ld    :   0 ldd   :   0 ldi   :  42
 lds   :   1 lpm   :   0 lsl   :   3 lsr   :   0 mov   :  24 movw  :   0 
 mul   :   2 muls  :   0 mulsu :   0 neg   :   0 nop   :  36 or    :   0 
 ori   :   0 out   :  17 pop   :   3 push  :   3 rcall :  62 ret   :   5 
-reti  :   0 rjmp  :  23 rol   :   0 ror   :   0 sbc   :   0 sbci  :   0 
+reti  :   0 rjmp  :  26 rol   :   0 ror   :   0 sbc   :   0 sbci  :   0 
 sbi   :   5 sbic  :   0 sbis  :   0 sbiw  :   1 sbr   :   0 sbrc  :   1 
 sbrs  :   0 sec   :   0 seh   :   0 sei   :   0 sen   :   0 ser   :  12 
 ses   :   0 set   :   0 sev   :   0 sez   :   0 sleep :   0 spm   :   0 
@@ -2573,7 +2578,7 @@ Instructions used: 37 out of 116 (31.9%)
 "ATmega2560" memory use summary [bytes]:
 Segment   Begin    End      Code   Data   Used    Size   Use%
 ---------------------------------------------------------------
-[.cseg] 0x000000 0x000302    770      0    770  262144   0.3%
+[.cseg] 0x000000 0x000308    776      0    776  262144   0.3%
 [.dseg] 0x000200 0x000200      0      0      0    8192   0.0%
 [.eseg] 0x000000 0x000000      0      0      0    4096   0.0%
 

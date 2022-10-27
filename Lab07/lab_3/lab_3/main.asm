@@ -135,6 +135,8 @@ overflow:
 	wait							
 	ldi temp2, 0x00						; clear blink
 	out PORTC, temp2
+
+	rjmp reset
 exit_overflow:
 	nop
 .endmacro
