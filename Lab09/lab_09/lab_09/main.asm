@@ -27,6 +27,7 @@
 
 
 .cseg
+.org 0x0000
 	jmp RESET
 ; Just to test different ports
 .org INT0addr
@@ -45,7 +46,7 @@
 	jmp EXT_INT0
 .org INT7addr
 	jmp EXT_INT0
-.org OVF0addr
+.org OVF0addr							; time counter overflow
 	jmp Timer0OVF
 
 
@@ -236,7 +237,6 @@ RESET:
 	;out DDRC, temp1
 
 	sei										; set interrupt flag
-
 	jmp main
 
 EXT_INT0:									; detected OpO low
