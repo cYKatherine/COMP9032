@@ -60,21 +60,17 @@ global_timer:
 .include "m2560def.inc"
 
 .equ CAR_SPEED_MASK = 0x0F
-.def car_speed = r15								; register for car speed
-.def temp1=r16										;
-.def temp2=r17
-.def temp3=r18
-.def temp4=r20
-.def temp5=r21
-.def temp6=r22
-.def three_seconds_count = r23
+.def digit_1 = r2
+.def digit_2 = r3
 .def num_cars = r7									; number of cars on the road
-
 .def row = r8
 .def col = r9
 .def rmask = r10
 .def cmask = r11
-
+.def car_speed = r15								; register for car speed
+.def temp1=r16										;
+.def temp2=r17
+.def temp3=r18
 ; road status, 8 bits
 ;		7: West traffic light is on
 ;		6: East traffic light is on
@@ -82,7 +78,13 @@ global_timer:
 ;		4: Set iff PB1 (West) detected
 ;		3: Set iff PB0 (East) detected
 .def road_status = r19
-  
+.def temp4=r20
+.def temp5=r21
+.def temp6=r22
+.def three_seconds_count = r23
+.def temp8=r24
+.def temp9=r25
+
 .equ LCD_RS = 7
 .equ LCD_E = 6
 .equ LCD_RW = 5
@@ -131,6 +133,30 @@ jmp RESET
 .org OVF0addr
 	jmp Timer0OVF
 /* END PROGRAM MEMORY LOCATIONS */
+
+/* TO_DECIMAL */
+; decimal to digits
+.macro to_decimal
+push temp1
+	clr digit_1
+	clr digit_2
+
+check_ten:
+	cpi @0, 10
+	brsh over_ten
+; The number is a single digit at this point
+	mov digit_2, @0
+	rjmp end_to_decimal
+over_ten:
+	subi @0, 10
+	inc digit_1
+	rjmp check_ten
+end_to_decimal:
+	ldi temp1, '0'
+	add digit_1, temp1
+	add digit_2, temp1
+	pop temp1
+.endmacro
 
 ; @0: the register store the pointer
 ; @1: the number we want to wrap around
@@ -186,7 +212,8 @@ end_wrap_around_pointer:
 ; @0 is the west/east queue we want to modify
 ; @1 is the car speed we want to add
 .macro add_cars_to_direction_queue
-	in temp4, SREG
+	in temp3, SREG
+	push temp3
 	push temp4
 	push zh
 	push zl
@@ -215,52 +242,55 @@ end_add_cars_to_direction_queue:
 	pop zl
 	pop zh
 	pop temp4
-	out SREG, temp4
+	pop temp3
+	out SREG, temp3
     nop
 .endmacro
 /* END ADD CARS TO THE DIRECTION QUEUE */
 
 /* POP CARS FROM THE QUEUE */
 ; @0 is the west/east queue we want to pop
+; @1 is the register to store the car speed
 ; return value: the first car speed, it will be stored in temp4
 .macro pop_cars_from_direction_queue
-	in temp4, SREG
+	push temp3
+	in temp3, SREG
+	push temp3
 	push temp4
+	push temp5
 	push zh
 	push zl
 
     ldi zh, high(@0)					; the address of the no_of_items in the queue
     ldi zl, low(@0)
 
-    ld temp4, z+						; temp4 is the no_of_items in the queue
-    ld temp5, z+						; temp5 is the head offset
-    cpi temp4, 0						; check if there are cars in the queue
+    ld temp3, z+						; temp3 is the no_of_items in the queue
+    cpi temp3, 0						; check if there are cars in the queue
     breq end_pop_cars_from_direction_queue
+    ld temp5, z+						; temp5 is the head offset
 
     add zl, temp5						; point to the head
-    ld temp4, z							; temp4 now stores the value of the car we want to pop
+    ld @1, z							; r12 now stores the value of the car we want to pop
 
-	; update the new head
-    inc temp5
-	wrap_around_pointer temp5, 99
-
-end_pop_cars_from_direction_queue:
-; store new no_of items and head 
+	; store new no_of items and head 
 	ldi zh, high(@0)
     ldi zl, low(@0)
-	ld temp4, z							; temp4 now have the original no_of_items in the queue
-	dec temp4
-	st z, temp4
+	ld temp5, z							; temp5 now have the original no_of_items in the queue
+	dec temp5							; decrease this value
+	st z, temp5							; store the decreased no_of_items in the queue
 
 	adiw z, 1							; increase z address by 1 to point to the head address
+	ld temp5, z
+	inc temp5
     st z, temp5							; store the new head value there
-
-	clr temp4
-
+end_pop_cars_from_direction_queue:
 	pop zl
 	pop zh
+	pop temp5
 	pop temp4
-	out SREG, temp4
+	pop temp3
+	out SREG, temp3
+	pop temp3
     nop
 .endmacro
 /* ENDPOP CARS FROM THE QUEUE */
@@ -275,22 +305,33 @@ end_pop_cars_from_direction_queue:
 	push zh
 	push zl
 
+	mov temp4, @0						; get car speed in temp4
+	cpi temp4, 10						; check if the speed is lower than 10, if so end
+	brlo end_add_car_to_road
+
 	ldi zh, high(roadQ)					; the address of the number_of_items
     ldi zl, low(roadQ)
 
 	ld temp5, z+						; temp5 has the value of no_of_items in this queue		
 	ld temp4, z+						; temp4 the value of head, z now points to the first car speed in the queue
 
-	add temp5, temp4					; set tail offset to be one after the current last
-	wrap_around_pointer temp5, 10		; otherwise, wrap around
+	add temp5, temp4					; temp5 = no_of_items + head offset
+	wrap_around_pointer temp5, 10		; wrap around
 
 update_car_speed:
 	add zl, temp5						; go to the new last position to insert car speed
-	mov temp4, @0						; load provided speed to temp4
+	mov r14, @0							; load provided speed to r14
 
-	st z, temp4							; store the car speed
-	clr temp4							; store the car position as 0
-	std z+10, temp4
+	/*
+	mov temp6, r14
+	to_decimal temp6
+	do_lcd_command 0b1100_0100
+	do_lcd_data digit_1
+	do_lcd_data digit_2*/
+
+	st z, r14							; store the car speed
+	clr r14								; store the car position as 0
+	std z+10, r14
 
 ; update new number_of_items in the queue
 	ldi zh, high(roadQ)					; the address of the tail (number)	
@@ -315,9 +356,8 @@ end_add_car_to_road:
 
 ; every one second, update the location of cars on the road
 .macro update_car_positions
-	push temp4
-	in temp4, SREG
-	push temp2
+	push temp3
+	in temp3, SREG
 	push temp3
 	push temp4
 	push temp5
@@ -328,7 +368,9 @@ end_add_car_to_road:
 	ldi zh, high(roadQ)					; the address of the tail (number)	
     ldi zl, low(roadQ)					; the address of the head (number)
 
-	ld temp3, z+						; temp3 has the value of number_of_items		
+	ld temp3, z+						; temp3 has the value of number_of_items	
+	tst temp3
+	breq rjmp_end_update_car_positions
 	ld temp3, z+						; temp3 has the value of head, z points to the first car speed in the queue
 	;; WS: can just do ld temp3, z right?
 	dec temp3							; decrease due to increment in the loop
@@ -337,24 +379,36 @@ end_add_car_to_road:
 	mov temp5, num_cars					; temp5 stores the value of original num_cars
 	
 	clr temp3							; clear temp3 to be used as a counter
-	ldi temp6, 190						; set temp6 to 190, used to keep track of prevous_car_position
+	ldi temp8, 190						; set temp8 to 190, used to keep track of prevous_car_position
 update_car_positions:
 	cp temp3, temp5						; comapre counter and orginal num_cars
-	brsh end_update_car_positions		; if counter >= original num_cars, go to end_update_car_positions
+	brsh rjmp_end_update_car_positions		; if counter >= original num_cars, go to end_update_car_positions
+	rjmp continue
+rjmp_end_update_car_positions:
+	rjmp end_update_car_positions
+continue:
 	adiw zl, 1							; go to the car speed we want to iterate
 
 	inc temp3							; increase temp3
 
-	ld temp2, z							; load car speed to temp2
-	ldd temp4, z+10						; load car position to temp4
+	ld temp4, z							; load car speed to temp4
+	ldd temp9, z+10						; load car position to temp9
+	/*
+	to_decimal temp4
+	do_lcd_command 0b1100_0100
+	do_lcd_data digit_1
+	do_lcd_data digit_2
+	to_decimal temp9
+	do_lcd_data digit_1
+	do_lcd_data digit_2*/
 
-	add temp4, temp2					; temp4 += temp2
-	cpi temp4, 180						; compare the car position with 50m/(5/18)
+	add temp9, temp4					; temp9 += temp4
+	cpi temp9, 180						; compare the car position with 50m/(5/18)
 	brsh car_out						; if it's larger than 180, it's drove off
-	cp temp4, temp6						; compare the current car position with the previous one
-	brsh car_crash						; breach to car_crash if current_position >= previous_position
-	std z + 10, temp4					; otherwise, store the updated position
-	mov temp6, temp4					; update the previous_car position with the current one
+	;cp temp9, temp8						; compare the current car position with the previous one
+	;brsh car_crash						; breach to car_crash if current_position >= previous_position
+	std z + 10, temp9					; otherwise, store the updated position
+	mov temp8, temp9					; update the previous_car position with the current one
 	rjmp update_car_positions
 
 ; we enter into a car_crash state, we want to set the speed of every car in front of it to be 10, and everything behind it to be 0
@@ -386,20 +440,19 @@ end_update_car_positions:
 	pop temp5
 	pop temp4
 	pop temp3
-	pop temp2
-	out SREG, temp4
-	pop temp4
+	out SREG, temp3
+	pop temp3
 
 	; check if it's emergency state, if it is, go to update_car_speed_after_toll
-	sbrc road_status, EMERGENCY_STATE	; skip next line if emergency state is cleared/off
-	check_car_and_toll
+	;sbrc road_status, EMERGENCY_STATE	; skip next line if emergency state is cleared/off
+	;check_car_and_toll
     nop
 .endmacro
 
 /* UPDATE CAR SPEED BEFORE TOLL */
 .macro update_car_speed_before_toll
-	in temp4, SREG
-	push temp4
+	in temp3, SREG
+	push temp3
 	push zh
 	push zl
 
@@ -407,7 +460,7 @@ end_update_car_positions:
     ldi zl, low(roadQ)
 
 ; Firstly, set every car speed before the first crashed car to be 0
-	ld temp4, z+								; temp4 has the value of number_of_items		
+	ld temp8, z+								; temp8 has the value of number_of_items		
 	ld temp5, z+								; temp5 has the value of head, z points to the first car speed in the queue
 
 	add zl, temp5								; go to the first car speed
@@ -418,7 +471,7 @@ end_update_car_positions:
 	; 1 means we want to set it to 10, 0 means we want to set it to 0.
 	ser temp6
 update_car_speed_before_toll_loop:
-	cp temp5, temp4								; compare counter and number_of_items
+	cp temp5, temp8								; compare counter and number_of_items
 	brsh end_update_car_speed_before_toll		; breach if larger or equal
 
 	tst temp6									; go to set_speed_to_zero if temp6 is 0
@@ -446,8 +499,8 @@ end_update_car_speed_before_toll_loop:
 end_update_car_speed_before_toll:
 	pop zl
 	pop zh
-	pop temp4
-	out SREG, temp4
+	pop temp3
+	out SREG, temp3
 .endmacro
 /* END UPDATE CAR SPEED BEFORE TOLL */
 
@@ -516,14 +569,14 @@ end_check_car_and_toll:
     ldi zl, low(roadQ)
 
 ; Now the crashed cars have been tolled, set every car speed to be 10
-	ld temp4, z+								; temp4 has the value of number_of_items		
+	ld temp8, z+								; temp8 has the value of number_of_items		
 	ld temp5, z+								; temp5 has the value of head, z points to the first car speed in the queue
 
 	add zl, temp5								; go to the first car speed
 
 	clr temp5									; clear temp5, use it as a counter
 update_car_speed_after_toll_loop:
-	cp temp5, temp4								; compare counter and number_of_items
+	cp temp5, temp8								; compare counter and number_of_items
 	brsh end_update_car_speed_after_toll		; breach if larger or equal
 
 	ldi temp3, 10								; set the current speed to 10
@@ -891,6 +944,8 @@ display_padding_end:
 /* DISPLAY MACRO */
 .macro refresh_display_top
 	push temp1
+	in temp1, SREG
+	push temp1	
 	do_lcd_command 0b10000000			; move to first row
 	; print number of cars in west queue TODO
 	ldi temp1, '0'
@@ -937,12 +992,16 @@ no_more_cars:
 	do_lcd_data temp1
 	do_lcd_data temp1
 
-pop temp1
+	pop temp1
+	out SREG, temp1
+	pop temp1
 .endmacro
 
 /* Refresh second row for input */
 .macro refresh_bottom
-push temp1
+	push temp1
+	in temp1, SREG
+	push temp1
 	do_lcd_command 0b11000000						; move cursor to second row
 	sbrs road_status, WEST_CAR_DETECTED
 	rjmp east_car
@@ -977,14 +1036,19 @@ east_car:
 
 end_refresh_bottom:
 	pop temp1
+	out SREG, temp1
+	pop temp1
 .endmacro
 
 /* MAIN FUNCTIONALITY */
 RESET:
+/*
 	; KAT TEST road
 	initialise_queues
 	ldi temp2, 30
-	add_car_to_road temp2
+	add_cars_to_direction_queue westQ, temp2
+	pop_cars_from_direction_queue westQ
+	add_car_to_road r12
 	ldi temp2, 20
 	add_car_to_road temp2
 	ldi temp2, 35
@@ -994,6 +1058,13 @@ RESET:
 	update_car_positions
 	update_car_positions
 	update_car_positions
+	update_car_positions
+	update_car_positions
+	update_car_positions
+	update_car_positions
+	update_car_positions
+	update_car_positions
+	*/
 		
 
 	ldi temp1, low(RAMEND)
@@ -1067,7 +1138,7 @@ RESET:
 
 
 	;add_car_to_road 15
-	update_car_positions
+	;update_car_positions
 	;rcall show_car_position
 
 
@@ -1083,7 +1154,9 @@ RESET:
 
 /* PB1 (WEST) DETECTED EXT_INT0 */
 ; Set bit 6 in register road_status
-EXT_INT0:		
+EXT_INT0:
+	push temp1
+	in temp1, SREG
 	push temp1									
 	; testing
 	do_lcd_command 0b11000000							; set the location of the cursor to be at the beginning of the second line
@@ -1097,12 +1170,16 @@ EXT_INT0:
 	ori road_status, (1<<WEST_CAR_DETECTED)				
 	andi road_status, EAST_CAR_DETECTED_MASK
 	pop temp1
+	out SREG, temp1
+	pop temp1
 	reti
 
 /* PB0 (EAST) DETECTED EXT_INT1 */
 ; Set bit 5 in register road_status
 EXT_INT1:
 	push temp1
+	in temp1, SREG
+	push temp1	
 	; testing
 	do_lcd_command 0b11000000 ; remove W if necessary
 	ldi temp1, ' '
@@ -1116,6 +1193,8 @@ EXT_INT1:
 	; Clear anyh west car detected
 	andi road_status, WEST_CAR_DETECTED_MASK
 	pop temp1
+	out SREG, temp1
+	pop temp1
 	reti
 
 /* INTERNAL INTERRUPT TRIGGERED */
@@ -1123,6 +1202,9 @@ EXT_INT1:
 ; 1. We press the * button
 ; 2. Two cars have collided with each other
 EXT_INT7:
+	push temp1
+	in temp1, SREG
+	push temp1
 	sbi porte, INTERRUPT_BIT
 	rcall sleep_100ms
 	rcall sleep_100ms
@@ -1150,6 +1232,9 @@ exit_emergency:
 	rjmp end_emergency
 end_emergency:
 	; Reset interrupt bit 1
+	pop temp1
+	out SREG, temp1
+	pop temp1
 	nop
 	reti
 
@@ -1204,8 +1289,8 @@ symbols_jmp:
 
 	jmp symbols
 convert:
-	rcall sleep_20ms
-	rcall sleep_20ms
+	call sleep_20ms
+	call sleep_20ms
 	mov temp2, col
 	cpi temp2, 3					; if column is 3 we have a letter, ignore
 	breq check_keypad_jmp
@@ -1242,7 +1327,9 @@ west_car_keypad:
 
 	refresh_bottom
 	; clear off bit
-	add_cars_to_direction_queue westQ, car_speed
+	ldi temp1, 10
+	add temp1, car_speed
+	add_cars_to_direction_queue westQ, temp1
 	andi road_status, WEST_CAR_DETECTED_MASK
 	
 	jmp check_keypad
@@ -1252,7 +1339,9 @@ east_car_keypad:
 	;ldi temp1, 'e'
 	;do_lcd_data temp1
 	refresh_bottom
-	add_cars_to_direction_queue eastQ, car_speed
+	ldi temp1, 10
+	add temp1, car_speed
+	add_cars_to_direction_queue eastQ, temp1
 	andi road_status, EAST_CAR_DETECTED_MASK
 	jmp check_keypad
 
@@ -1293,9 +1382,6 @@ Timer0OVF:
 not_second_jmp:
 	jmp not_second
 refresh:													; one second has passed
-	;send_car 2, 10 
-	;send_car 5, 15
-
 	ldi zl, low(global_timer)
 	ldi zh, high(global_timer)
 	ld r24, Z+
@@ -1324,17 +1410,14 @@ refresh:													; one second has passed
 	; then we send west cars to road
 send_cars_to_road:
 	clr three_seconds_count									; if 3 seconds have passed, clear three_seconds_count
-	pop_cars_from_direction_queue westQ
-	tst temp3												; if temp3 is 0, skip next line
-	;add_car_to_road temp3									; othersie, add the car to the road
+	clr r12													; set r12 to be 0
+	pop_cars_from_direction_queue westQ, r12
 
-	; if TRAFFIC_DIRECTION_EAST_TO_WEST enabled
-	; if 3 seconds
-	; if EAST_LIGHT_ON enabled
-	; then we send east cars to road
-	;check_three_seconds
-	;pop_cars_from_direction_queue eastQ
-	;add_car_to_road temp3
+	tst r12													; if r12 is not 0, add car to road
+	brne r12_not_zero
+	jmp end_timer
+r12_not_zero:
+	add_car_to_road r12										; othersie, add the car to the road
 not_second:
 	st Y, r22
 	rjmp end_timer
