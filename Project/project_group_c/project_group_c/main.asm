@@ -393,20 +393,12 @@ continue:
 
 	ld temp4, z							; load car speed to temp4
 	ldd temp9, z+10						; load car position to temp9
-	/*
-	to_decimal temp4
-	do_lcd_command 0b1100_0100
-	do_lcd_data digit_1
-	do_lcd_data digit_2
-	to_decimal temp9
-	do_lcd_data digit_1
-	do_lcd_data digit_2*/
 
 	add temp9, temp4					; temp9 += temp4
 	cpi temp9, 180						; compare the car position with 50m/(5/18)
 	brsh car_out						; if it's larger than 180, it's drove off
-	;cp temp9, temp8						; compare the current car position with the previous one
-	;brsh car_crash						; breach to car_crash if current_position >= previous_position
+	cp temp9, temp8						; compare the current car position with the previous one
+	brsh car_crash						; breach to car_crash if current_position >= previous_position
 	std z + 10, temp9					; otherwise, store the updated position
 	mov temp8, temp9					; update the previous_car position with the current one
 	rjmp update_car_positions
@@ -434,6 +426,10 @@ end_update_car_positions:
 	ldi zl, low(roadQ)
 	st z, num_cars
 
+	; check if it's emergency state, if it is, go to update_car_speed_after_toll
+	;sbrc road_status, EMERGENCY_STATE	; skip next line if emergency state is cleared/off
+	;check_car_and_toll
+
 	pop zl
 	pop zh
 	pop temp6
@@ -442,10 +438,6 @@ end_update_car_positions:
 	pop temp3
 	out SREG, temp3
 	pop temp3
-
-	; check if it's emergency state, if it is, go to update_car_speed_after_toll
-	;sbrc road_status, EMERGENCY_STATE	; skip next line if emergency state is cleared/off
-	;check_car_and_toll
     nop
 .endmacro
 
