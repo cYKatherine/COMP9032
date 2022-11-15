@@ -229,7 +229,6 @@ send_car_from_east:
 
 	pop_cars_from_direction_queue eastQ, new_speed
 
-
 	rjmp send_car_reset_timer
 	; pop from relevant queue
 	; reset counter
@@ -254,7 +253,7 @@ send_car_reset_timer:
 	add_car_to_road new_speed
 
 	mov temp9, new_speed
-		do_lcd_command 0b1000_1000
+	do_lcd_command 0b1000_1000
 	ldi temp3, 'S'
 	do_lcd_data temp3
 	to_decimal temp9
@@ -341,7 +340,6 @@ end_initialize:
     add zl, temp4						; point to the position to add items
     mov temp5, @1						; load car speed to temp 5
 	st z, temp5							; store the car speed to one spot after the tail
-
 
 end_add_cars_to_direction_queue:
 ; store new no_of_items in the queue
@@ -451,7 +449,6 @@ end_pop_cars_from_direction_queue:
 	push zl
 
 	mov temp4, @0						; get car speed in temp4
-
 
 	cpi temp4, 10						; check if the speed is lower than 10, if so end
 	brlo end_add_car_to_road
@@ -1404,10 +1401,7 @@ RESET:
 	do_lcd_command 0b00000001 ; clear display
 	do_lcd_command 0b00000110 ; increment, no display shift
 	do_lcd_command 0b00001110 ; Cursor on, bar, no blink
-
-	clr three_minutes_count
-	clr three_seconds_count
-	clr timer_overflow_count
+	
 	; Set up clock
 	; clear clock counter
 	clr temp1
@@ -1431,12 +1425,14 @@ RESET:
 	ldi temp1, (1 << INT0) | (1 << INT1) | (1 << INT7)
 	out EIMSK, temp1
 
+	clr three_minutes_count
+	clr three_seconds_count
+	clr timer_overflow_count
 	ldi temp1, 3
 	mov three_seconds_count, temp1
 
 	sei									; set interrupt flag
 	initialise_queues
-
 
 	jmp check_keypad
 
@@ -1449,7 +1445,7 @@ EXT_INT0:
 	call sleep_100ms
 
 	cli
-	sbrs road_status, CAR_DETECTED
+	sbrs road_status, CAR_DETECTED						; skip next line if car detected
 	rjmp ignore_west
 
 	do_lcd_command 0b11000010							; set the location of the cursor to be at the beginning of the second line
@@ -1475,11 +1471,11 @@ ignore_west:
 /* PB0 (EAST) DETECTED EXT_INT1 */
 ; Set bit 5 in register road_status
 EXT_INT1:
-	cli
+	push temp8
 	call sleep_100ms
 
-	push temp8
-	sbrs road_status, CAR_DETECTED
+	cli
+	sbrs road_status, CAR_DETECTED						; skip next line if car detected
 	rjmp ignore_east
 	; testing
 	do_lcd_command 0b11000010 ; remove W if necessary
@@ -1526,11 +1522,12 @@ EXT_INT7:
 
 	rjmp end_emergency
 exit_emergency:
-	do_lcd_command 0b1100_1110
-	ldi temp1, 'E'
-	do_lcd_data temp1
-	ldi temp1, 'E'
-	do_lcd_data temp1
+	clr three_minutes_count
+	clr three_seconds_count
+	clr timer_overflow_count
+	ldi temp1, 3
+	mov three_seconds_count, temp1
+
 	andi road_status, EMERGENCY_STATE_MASK
 
 	rjmp end_emergency
